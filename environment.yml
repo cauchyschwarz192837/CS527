@@ -1,0 +1,20 @@
+name: compsci527
+channels:
+  - pytorch
+  - conda-forge
+  - anaconda
+  - nodefaults
+dependencies:
+  - python
+  - notebook
+  - nbconvert
+  - jupytext
+  - numpy=1
+  - scikit-image
+  - scikit-learn
+  - scipy
+  - tqdm
+  - matplotlib
+  - pytorch
+  - torchvision
+  - autograd
