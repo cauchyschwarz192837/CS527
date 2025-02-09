@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from skimage.transform import swirl
 
 def check_bounds(a, mx):
     msg = 'dimension {} of coordinate array has entries outside [0, {})'
@@ -39,18 +40,8 @@ def warp(in_image, coords):
 
     return out_image
 
+
 def sample(image, rows, columns):
-    """
-    Sample the image using bilinear interpolation over a specified grid.
-    
-    Parameters:
-        image (numpy.ndarray): 2D input grayscale image.
-        rows (numpy.ndarray): Array of real-valued row indices to sample.
-        columns (numpy.ndarray): Array of real-valued column indices to sample.
-    
-    Returns:
-        numpy.ndarray: The resampled image.
-    """
     a, b = np.meshgrid(rows, columns, indexing='ij')
     coords = np.array([a, b])
     
@@ -58,13 +49,36 @@ def sample(image, rows, columns):
     return out_image
 
 
-#def swirl(image, center=None, strength=1, radius=100, rotation=0):
+def swirl(image, center=None, strength=10, radius=120, rotation=0):
+    if center is None:
+        center = np.array(image.shape) / 2
 
+    rows, cols = np.arange(image.shape[0]), np.arange(image.shape[1])
+    a, b = np.meshgrid(rows, cols, indexing='ij')
+
+    centered_a = a - center[0]
+    centered_b = b - center[1]
+
+    rho = np.sqrt(centered_a ** 2 + centered_b ** 2)
+    theta = np.arctan2(centered_b, centered_a)  
+
+    adjusted_radius = radius / (5 * np.log(2))
+
+    old_theta = -rotation - (strength * np.exp(-rho / adjusted_radius)) + theta
+
+    rows1 = center[0] + rho * np.cos(old_theta)
+    columns1 = center[1] + rho * np.sin(old_theta)
+
+    rows1 = np.clip(rows1, 0, image.shape[0] - 1) # can disregard
+    columns1 = np.clip(columns1, 0, image.shape[1] - 1) # can disregard
+
+    coords = np.array([rows1, columns1])
+    out_image = warp(image, coords)
+
+    return out_image
 
 
 if __name__ == "__main__":
-    from skimage import data
-
     I = 10 * np.reshape(np.arange(6), (2, 3))
     row_grid = np.linspace(0, 1, 5)
     column_grid = np.linspace(1, 2, 3)
@@ -76,7 +90,6 @@ if __name__ == "__main__":
 
     from skimage import data
 
-    # Load the image
     page = data.page()
     page_detail = sample(page, np.linspace(47, 65, 100), np.linspace(88, 160, 200))
 
@@ -84,17 +97,25 @@ if __name__ == "__main__":
     plt.subplot(1, 2, 1)
     plt.imshow(page, cmap='gray')
     plt.axis('off')
-    plt.title("Input Image")
 
     plt.subplot(1, 2, 2)
     plt.imshow(page_detail, cmap='gray')
     plt.axis('off')
-    plt.title("Resampled Image")
+
     plt.show()
 
+    #-------------------------------------------------------
+
     checkerboard = data.checkerboard()
-    
+    swirled_image = swirl(checkerboard)
 
+    plt.figure(figsize=(12, 6))
+    plt.subplot(1, 2, 1)
+    plt.imshow(checkerboard, cmap='gray')
+    plt.axis('off')
 
+    plt.subplot(1, 2, 2)
+    plt.imshow(swirled_image, cmap='gray')
+    plt.axis('off')
 
-    
+    plt.show()
